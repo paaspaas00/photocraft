@@ -277,6 +277,10 @@ pub struct Drag {
     /// keeps the locked direction stable between events. The Move tool's own drags use `move_mods`.
     pub sel_axis: Option<[f64; 2]>,
     pub lasso: Option<crate::lasso_ui::Lasso>,
+    /// Whether this painting stroke steps pixel by pixel (`pixelSteps`), latched at the press so
+    /// zooming or toggling the pixel grid mid-stroke can't make the commit differ from the live
+    /// preview. `None` reads the current view.
+    pub pixel_steps: Option<bool>,
 }
 
 impl Drag {
@@ -295,6 +299,7 @@ impl Drag {
             sel_move: None,
             sel_axis: None,
             lasso: None,
+            pixel_steps: None,
         }
     }
 
@@ -710,7 +715,7 @@ fn stroke_params(app: &PhotocraftApp, d: &Drag, points: &[Vec<f64>]) -> serde_js
         p["block"] = json!(true);
     }
     // With the pixel grid showing, the stroke steps one pixel row or column at a time (#9188).
-    if pixel_grid_visible(app) {
+    if d.pixel_steps.unwrap_or_else(|| pixel_grid_visible(app)) {
         p["pixelSteps"] = json!(true);
     }
     p
@@ -6401,7 +6406,8 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
             }
             // ⌥ flips Dodge/Burn and Blur/Sharpen for this stroke.
             let tool = crate::retouch_ui::alt_flipped(tool, mods.alt);
-            app.drag = Some(Drag { clear, ..Drag::new(tool, from.map_or([x, y], |p| [p[0], p[1]]), points, mods, erase) });
+            let pixel_steps = Some(pixel_grid_visible(app));
+            app.drag = Some(Drag { clear, pixel_steps, ..Drag::new(tool, from.map_or([x, y], |p| [p[0], p[1]]), points, mods, erase) });
             app.trail = None;
             app.stylus.begin_stroke();
             if from.is_some() {
@@ -10935,6 +10941,13 @@ mod pixel_steps_tests {
                 let d = Drag::new(tool, [4.2, 4.7], vec![[4.2, 4.7, 1.0]], egui::Modifiers::NONE, tool == Tool::Eraser);
                 let p = stroke_params(&app, &d, &[vec![4.2, 4.7, 1.0]]);
                 assert_eq!(p.get("pixelSteps").is_some(), steps, "{tool:?}: grid {grid}, extras {extras}, zoom {zoom}");
+                // Latched at the press: the commit keeps the live stroke's mode whatever the view
+                // does mid-stroke.
+                for latched in [true, false] {
+                    let d = Drag { pixel_steps: Some(latched), ..d.clone() };
+                    let p = stroke_params(&app, &d, &[vec![4.2, 4.7, 1.0]]);
+                    assert_eq!(p.get("pixelSteps").is_some(), latched, "{tool:?}: latched {latched}, view {steps}");
+                }
             }
         }
     }
