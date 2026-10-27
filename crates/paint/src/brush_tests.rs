@@ -279,6 +279,14 @@ fn pixel_steps_put_every_dab_one_pixel_further_on_the_grid() {
         let f = if b.size == 10.0 { 0.0 } else { 0.5 };
         assert!(c.iter().all(|&(x, y)| x.fract() == f && y.fract() == f), "{c:?}");
     }
+    // A tip wider than the cap keeps its spacing in whole pixels, still on the grid: a dab per
+    // pixel would cost its whole square per pixel of travel.
+    let wide = BrushSettings { size: 201.0, spacing: 0.25, ..soft.clone() };
+    let c = steps(&wide, &[StrokePoint::new(10.2, 5.0, 1.0), StrokePoint::new(410.7, 5.0, 1.0)]);
+    let xs: Vec<f64> = c.iter().map(|d| d.0).collect();
+    assert_eq!(xs, (0..=8).map(|i| 10.5 + 50.0 * f64::from(i)).collect::<Vec<_>>(), "every 50 px (201 × 25 %)");
+    let at_cap = BrushSettings { size: crate::dynamics::PIXEL_STEP_MAX_DIAMETER, spacing: 0.25, ..soft.clone() };
+    assert_eq!(steps(&at_cap, &[StrokePoint::new(0.2, 0.2, 1.0), StrokePoint::new(20.2, 0.2, 1.0)]).len(), 21, "up to the cap: every pixel");
     // Scattered dabs land back on the grid.
     let mut scattered = soft.clone();
     scattered.scattering.enabled = true;

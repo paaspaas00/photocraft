@@ -63,7 +63,7 @@ tablets against Photoshop side by side.
 | Latency: dab to screen within a frame | partial | budgets P13/P16/P33 over (scorecard); big-brush lag #2619, #1994; cursor lag #2566, #1343 |
 | No hitch at mouse-up on a long stroke | not measurable | P32 needs a frame harness |
 | Live stroke for Brush and Eraser | done | |
-| With the pixel grid showing, strokes step one pixel row/column at a time (any tip; cursor stays smooth) | done | #9188 (`PathWalker::pixel_steps`, `paint.stroke`/`paint.pencil` `pixelSteps`); cursor snapping #8944, #1057 open |
+| With the pixel grid showing, strokes step one pixel row/column at a time (tips up to 64 px; wider tips keep their spacing on the grid; cursor stays smooth) | done | #9188 (`PathWalker::pixel_steps`, `paint.stroke`/`paint.pencil` `pixelSteps`); cursor snapping #8944, #1057 open |
 | Live stroke for every brush-based retouch tool | partial | TOOL-213-7: all live but the Mixer Brush (PR #3627); Spot Healing shows the area it heals and heals on release, as Photoshop does |
 | No OS arrow cursor over the canvas with a pen | partial | TOOL-213-14 |
 
